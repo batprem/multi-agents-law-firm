@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  opensearch-node:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch-node
+    environment:
+        - OPENSEARCH_INITIAL_ADMIN_PASSWORD=$OPENSEARCH_PASSWORD
+        - discovery.type=single-node
+        - plugins.security.ssl.http.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch-data1:/usr/share/opensearch/data
+    ports:
+      - 9200:9200
+      - 9600:9600
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    ports:
+      - 5601:5601
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch-node:9200"]'
+      OPENSEARCH_USERNAME: $OPENSEARCH_USERNAME
+      OPENSEARCH_PASSWORD: $OPENSEARCH_PASSWORD
+
+volumes:
+  opensearch-data1:

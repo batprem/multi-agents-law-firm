@@ -1,0 +1,9 @@
+pandas==2.2.2
+numpy==1.26.4
+opensearch-py==2.6.0
+python-dotenv==1.0.1
+pdfplumber==0.11.0
+ollama==0.2.0
+beautifulsoup4==4.12.3
+tqdm==4.66.4
+retry==0.9.2
