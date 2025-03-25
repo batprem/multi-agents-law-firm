@@ -1,16 +1,14 @@
-use serde_json::json;
 use opensearch::{OpenSearch, SearchParts};
+use serde_json::json;
 use std::collections::HashMap;
 
-
 pub trait Searcher {
-    async fn get_available_topics(&self) -> Option<String>;
+    async fn get_available_topics(&self) -> Option<(Vec<String>, String)>;
 }
 
 pub struct OpenSearcher {
     client: OpenSearch,
 }
-
 
 impl OpenSearcher {
     pub fn new(client: OpenSearch) -> Self {
@@ -18,9 +16,10 @@ impl OpenSearcher {
     }
 }
 
-impl Searcher for OpenSearcher {    
-    async fn get_available_topics(&self) -> Option<String> {
-        let response = self.client
+impl Searcher for OpenSearcher {
+    async fn get_available_topics(&self) -> Option<(Vec<String>, String)> {
+        let response = self
+            .client
             .search(SearchParts::Index(&["sfc_code_preprocess"]))
             .body(json!({
                 "size": 0,
@@ -40,14 +39,14 @@ impl Searcher for OpenSearcher {
             .await
             .expect("Failed to execute search query");
 
-        let response_body: serde_json::Value = response
-            .json()
-            .await
-            .expect("Failed to parse response");
+        let response_body: serde_json::Value =
+            response.json().await.expect("Failed to parse response");
 
-        if let Some(buckets) = response_body["aggregations"]["distinct_sources"]["buckets"].as_array() {
+        if let Some(buckets) =
+            response_body["aggregations"]["distinct_sources"]["buckets"].as_array()
+        {
             let mut buckets_topic_to_url: HashMap<String, String> = HashMap::new();
-            
+
             for bucket in buckets {
                 if let (Some(topic_title), Some(file_url)) = (
                     bucket["key"]["topic_title"].as_str(),
@@ -56,20 +55,21 @@ impl Searcher for OpenSearcher {
                     buckets_topic_to_url.insert(topic_title.to_string(), file_url.to_string());
                 }
             }
-    
-            let topic_list: Vec<String> = buckets_topic_to_url.keys().cloned().collect();
-            let topic_choices = topic_list.iter()
+
+            let mut topic_list: Vec<String> = buckets_topic_to_url.keys().cloned().collect();
+            topic_list.sort();
+            let topic_choices = topic_list
+                .iter()
                 .enumerate()
                 .map(|(i, topic)| format!("{}. {}", i + 1, topic))
                 .collect::<Vec<String>>()
                 .join("\n");
-            
-            return Some(topic_choices);
+
+            return Some((topic_list, topic_choices));
         }
-        return None
+        return None;
     }
 }
-
 
 pub async fn test_query(client: &OpenSearch) -> serde_json::Value {
     let response = client
