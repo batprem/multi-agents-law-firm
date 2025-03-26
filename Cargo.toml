@@ -27,3 +27,11 @@ path = "src/agents/topic_selector.rs"
 [[bin]]
 name = "text_query_builder"
 path = "src/agents/text_query_builder.rs"
+
+[[bin]]
+name = "text_embedder"
+path = "src/connectors/text_embedder.rs"
+
+[[bin]]
+name = "searcher"
+path = "src/tools/searcher.rs"

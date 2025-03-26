@@ -2,15 +2,16 @@ use lawfirm_agents::connectors::llm::{LLMConnector, Message};
 use std::collections::HashMap;
 use tokio;
 
-const SYSTEM_PROMPT: &str = "Pick a choice, please answer only a number and do not include prologue, prefix or suffix";
-
+const SYSTEM_PROMPT: &str =
+    "Pick a choice, please answer only a number and do not include prologue, prefix or suffix";
 
 pub struct TopicSelector {
     llm_connector: LLMConnector,
 }
 
 impl TopicSelector {
-    pub fn new(url: String,
+    pub fn new(
+        url: String,
         model: String,
         api_key: String,
         config: Option<HashMap<String, serde_json::Value>>,
@@ -25,11 +26,7 @@ impl TopicSelector {
     }
 
     pub async fn request_llm(&self, user_prompt: &str) -> Option<String> {
-        self
-            .llm_connector
-            .request_llm(user_prompt)
-            .await
-            .ok()
+        self.llm_connector.request_llm(user_prompt).await.ok()
     }
     pub fn construct_prompt(&self, user_prompt: &str, topics_prompt: &str) -> String {
         format!("# Instruction:
@@ -41,7 +38,7 @@ Pick an index of document that you think that it can help answer the following q
 # Question:
 {}", topics_prompt, user_prompt)
     }
-    pub async fn select_topic(&self, user_prompt: &str,  topics_prompt: &str) -> usize {
+    pub async fn select_topic(&self, user_prompt: &str, topics_prompt: &str) -> usize {
         let prompt = self.construct_prompt(user_prompt, &topics_prompt);
         let response = self.request_llm(&prompt).await.unwrap();
         response.trim().parse::<usize>().unwrap()
@@ -82,7 +79,8 @@ async fn main() {
 11. Section II - Code on Unit Trusts and Mutual Funds
 12. Section III - Code on Investment-Linked Assurance Schemes
 13. Section IV - Code on Unlisted Structured Investment Products
-14. The Codes on Takeovers and Mergers and Share Buy-backs".to_string();
+14. The Codes on Takeovers and Mergers and Share Buy-backs"
+        .to_string();
 
     let topic_selector = TopicSelector::new(
         "http://localhost:11434/api/chat".to_string(),
@@ -92,11 +90,16 @@ async fn main() {
     );
     let question = "I want to invest in real estates. What detail should I know?";
     let selected_topic_index = topic_selector.select_topic(question, &topics).await;
-    println!("Question:
+    println!(
+        "Question:
 {}
-Selected topic: {}", question, topic_list[selected_topic_index - 1]
-);
+Selected topic: {}",
+        question,
+        topic_list[selected_topic_index - 1]
+    );
 
-    let selected_topic_index = topic_selector.select_topic("How to cook fried chicken?", &topics).await;
+    let selected_topic_index = topic_selector
+        .select_topic("How to cook fried chicken?", &topics)
+        .await;
     println!("{}", selected_topic_index);
 }

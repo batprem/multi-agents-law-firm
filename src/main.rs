@@ -31,10 +31,14 @@ async fn main() {
         "Not use".to_string(),
         None,
     );
-    let selected_topic_index = topic_selector.select_topic("Tell me about real estate law?", &topics).await;
+    let selected_topic_index = topic_selector
+        .select_topic("Tell me about real estate law?", &topics)
+        .await;
     println!("Selected topic {}", topic_list[selected_topic_index - 1]);
 
-    let selected_topic_index = topic_selector.select_topic("How to cook fried chicken?", &topics).await;
+    let selected_topic_index = topic_selector
+        .select_topic("How to cook fried chicken?", &topics)
+        .await;
     println!("{}", selected_topic_index);
     // let stream = llm
     //     .request_streaming_llm("Write essay about the history of machine learning?")

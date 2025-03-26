@@ -10,7 +10,8 @@ pub struct TextQueryBuilder {
 }
 
 impl TextQueryBuilder {
-    pub fn new(url: String,
+    pub fn new(
+        url: String,
         model: String,
         api_key: String,
         config: Option<HashMap<String, serde_json::Value>>,
@@ -25,19 +26,18 @@ impl TextQueryBuilder {
     }
 
     pub async fn request_llm(&self, user_prompt: &str) -> Option<String> {
-        self
-            .llm_connector
-            .request_llm(user_prompt)
-            .await
-            .ok()
+        self.llm_connector.request_llm(user_prompt).await.ok()
     }
     pub fn construct_prompt(&self, question: &str) -> String {
-        format!("# Instruction:
+        format!(
+            "# Instruction:
 
 Based on the following question, what keywords should be queried in Opensearch
 
 # Question:
-{}", question)
+{}",
+            question
+        )
     }
     pub async fn build(&self, question: &str) -> String {
         let prompt = self.construct_prompt(question);
@@ -54,6 +54,8 @@ async fn main() {
         "Not use".to_string(),
         None,
     );
-    let query = text_query_builder.build("I want to invest in real estates. What detail should I know?").await;
+    let query = text_query_builder
+        .build("I want to invest in real estates. What detail should I know?")
+        .await;
     println!("{}", query);
 }

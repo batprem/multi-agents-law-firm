@@ -1,9 +1,18 @@
+use lawfirm_agents::connectors::text_embedder::get_embedding;
+use lawfirm_agents::constants::EMBEDDING_MODEL;
 use opensearch::{OpenSearch, SearchParts};
-use serde_json::json;
+use serde_json::{Value, json};
 use std::collections::HashMap;
+use tokio;
 
 pub trait Searcher {
-    async fn get_available_topics(&self) -> Option<(Vec<String>, String)>;
+    fn get_available_topics(&self) -> impl std::future::Future<Output = Option<(Vec<String>, String)>> + Send;
+    fn search_data_in_opensearch(
+        &self,
+        query: &str,
+        search_method: SearchMethod,
+        topic_title: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<Value, reqwest::Error>> + Send;
 }
 
 pub struct OpenSearcher {
@@ -14,6 +23,11 @@ impl OpenSearcher {
     pub fn new(client: OpenSearch) -> Self {
         OpenSearcher { client }
     }
+}
+
+pub enum SearchMethod {
+    Text,
+    Vector,
 }
 
 impl Searcher for OpenSearcher {
@@ -69,21 +83,77 @@ impl Searcher for OpenSearcher {
         }
         return None;
     }
+    async fn search_data_in_opensearch(
+        &self,
+        query: &str,
+        search_method: SearchMethod,
+        topic_title: Option<&str>,
+    ) -> Result<Value, reqwest::Error> {
+        let mut must: Vec<Value> = vec![];
+        match search_method {
+            SearchMethod::Text => {
+                let _ = must.push(json!({
+                        "match": {
+                            "text": {
+                                "query": query,
+                            },
+                        },
+                    }
+                ));
+            }
+            SearchMethod::Vector => {
+                let query_embedding = get_embedding(query, EMBEDDING_MODEL).await.ok().unwrap();
+                must.push(json!({"knn": {"embedding": {"vector": query_embedding, "k": 5}}}))
+            }
+        }
+        must.push(json!({
+            "match": {
+                "topic_title": {
+                    "query": topic_title,
+                },
+            }
+        }));
+        let query_body = json!({
+            "query": {"bool": {"must": must}},
+            "_source": false,
+            "fields": ["id", "topic_title", "text", "file_url", "page_number"],
+        });
+        let response = self
+            .client
+            .search(SearchParts::Index(&["sfc_code_preprocess"]))
+            .body(query_body)
+            .send()
+            .await
+            .ok()
+            .unwrap();
+        let query_result: Value = response.json().await.expect("Failed to parse response");
+
+        return Ok(query_result);
+    }
 }
 
-pub async fn test_query(client: &OpenSearch) -> serde_json::Value {
-    let response = client
-        .search(SearchParts::Index(&["sfc_code_preprocess"]))
-        .body(json!({
-            "query": {
-                "match_all": {}
-            }
-        }))
-        .send()
-        .await
-        .expect("Failed to execute search query");
+#[allow(dead_code)]
+#[tokio::main]
+async fn main() {
+    use lawfirm_agents::connectors::opensearch::create_client;
 
-    let response_body: serde_json::Value = response.json().await.expect("Failed to parse response");
-    println!("Search Response: {}", response_body);
-    response_body
+    let opensearch_client = create_client();
+    let searcher = OpenSearcher::new(opensearch_client);
+    let query_result = searcher
+        .search_data_in_opensearch(
+            "What is the law on real estate?",
+            SearchMethod::Vector,
+            Some("Real Estate"),
+        )
+        .await;
+    println!("{:?}", query_result);
+
+    let query_result = searcher
+        .search_data_in_opensearch(
+            "What is the law on real estate?",
+            SearchMethod::Text,
+            Some("Real Estate"),
+        )
+        .await;
+    println!("{:?}", query_result);
 }
