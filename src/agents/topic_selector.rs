@@ -1,6 +1,8 @@
 use lawfirm_agents::connectors::llm::{LLMConnector, Message};
 use std::collections::HashMap;
 use tokio;
+use lawfirm_agents::constants::RETRY_COUNT;
+
 
 const SYSTEM_PROMPT: &str =
     "Pick a choice, please answer only a number and do not include prologue, prefix or suffix";
@@ -25,8 +27,8 @@ impl TopicSelector {
         TopicSelector { llm_connector }
     }
 
-    pub async fn request_llm(&self, user_prompt: &str) -> Option<String> {
-        self.llm_connector.request_llm(user_prompt).await.ok()
+    pub async fn request_llm(&self, user_prompt: &str) -> Result<String, reqwest::Error> {
+        self.llm_connector.request_llm(user_prompt).await
     }
     pub fn construct_prompt(&self, user_prompt: &str, topics_prompt: &str) -> String {
         format!("# Instruction:
@@ -38,10 +40,16 @@ Pick an index of document that you think that it can help answer the following q
 # Question:
 {}", topics_prompt, user_prompt)
     }
-    pub async fn select_topic(&self, user_prompt: &str, topics_prompt: &str) -> usize {
+    pub async fn select_topic(&self, user_prompt: &str, topics_prompt: &str) -> Result<usize, String> {
         let prompt = self.construct_prompt(user_prompt, &topics_prompt);
-        let response = self.request_llm(&prompt).await.unwrap();
-        response.trim().parse::<usize>().unwrap()
+        for _ in 0..RETRY_COUNT {
+            let response = self.request_llm(&prompt).await.unwrap();
+            match response.trim().parse::<usize>() {
+                Ok(index) => return Ok(index),
+                Err(_) => continue
+            }
+        }
+        Err("Cannot parse to usize".to_string())
     }
 }
 
@@ -89,7 +97,7 @@ async fn main() {
         None,
     );
     let question = "I want to invest in real estates. What detail should I know?";
-    let selected_topic_index = topic_selector.select_topic(question, &topics).await;
+    let selected_topic_index = topic_selector.select_topic(question, &topics).await.unwrap();
     println!(
         "Question:
 {}
@@ -100,6 +108,6 @@ Selected topic: {}",
 
     let selected_topic_index = topic_selector
         .select_topic("How to cook fried chicken?", &topics)
-        .await;
+        .await.unwrap();
     println!("{}", selected_topic_index);
 }

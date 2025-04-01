@@ -142,7 +142,6 @@ impl LLMConnector {
                     }
                     Err(e) => eprintln!("Stream error: {}", e),
                 }
-            // }
             }
         })
     }

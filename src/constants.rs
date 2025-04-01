@@ -18,7 +18,9 @@ impl OpenSearchConfig {
 
 pub const MODEL: &str = "gemma2:latest";
 pub const EMBEDDING_MODEL: &str = "all-minilm:latest";
+pub const EMBEDDING_URL: &str = "http://localhost:11434/api/embed";
 pub const LLM_HOST: &str = "http://localhost:11434/api/chat";
 pub const RETRY_COUNT: u16 = 5;
 pub const SELECT_TOP_RESULTS: u16 = 3;
 pub const INDEX_NAME: &str = "sfc_code_preprocess";
+pub const SEARCH_TOP_RESULTS: usize = 3;

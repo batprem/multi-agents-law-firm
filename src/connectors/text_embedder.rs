@@ -1,13 +1,15 @@
+use crate::constants::{EMBEDDING_MODEL, EMBEDDING_URL};
 use reqwest::Client;
 use serde_json::Value;
 use std::error::Error;
 use std::io::Error as IOError;
 use tokio;
 
+
 pub async fn get_embedding(text: &str, embedding_model: &str) -> Result<Vec<f64>, Box<dyn Error>> {
     let client = Client::new();
     let response = client
-        .post("http://localhost:11434/api/embed")
+        .post(EMBEDDING_URL)
         .json(&serde_json::json!({
             "model": embedding_model,
             "input": text
@@ -32,7 +34,7 @@ pub async fn get_embedding(text: &str, embedding_model: &str) -> Result<Vec<f64>
 async fn main() {
     let embedded_vector = get_embedding(
         "I want to invest in real estates. What detail should I know?",
-        "all-minilm:latest",
+        EMBEDDING_MODEL
     )
     .await
     .ok()

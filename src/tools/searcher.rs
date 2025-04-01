@@ -1,5 +1,6 @@
-use lawfirm_agents::connectors::text_embedder::get_embedding;
-use lawfirm_agents::constants::EMBEDDING_MODEL;
+use crate::connectors::text_embedder::get_embedding;
+use crate::constants::{EMBEDDING_MODEL, SEARCH_TOP_RESULTS};
+use crate::types::SearchResult;
 use opensearch::{OpenSearch, SearchParts};
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -12,7 +13,7 @@ pub trait Searcher {
         query: &str,
         search_method: SearchMethod,
         topic_title: Option<&str>,
-    ) -> impl std::future::Future<Output = Result<Value, reqwest::Error>> + Send;
+    ) -> impl std::future::Future<Output = Result<Vec<SearchResult>, reqwest::Error>> + Send;
 }
 
 pub struct OpenSearcher {
@@ -28,6 +29,30 @@ impl OpenSearcher {
 pub enum SearchMethod {
     Text,
     Vector,
+}
+
+
+fn extract_seaarch_results(json_result: Value) -> Vec<SearchResult> {
+    let mut search_results: Vec<SearchResult> = vec![];
+
+    if let Some(hits) = json_result["hits"]["hits"].as_array() {
+        for hit in hits[0..SEARCH_TOP_RESULTS].iter() {
+            if let (Some(topic), Some(url), Some(page), Some(text)) = (
+                hit["fields"]["topic_title"][0].as_str(),
+                hit["fields"]["file_url"][0].as_str(),
+                hit["fields"]["page_number"][0].as_u64(),
+                hit["fields"]["text"][0].as_str(),
+            ) {
+                search_results.push(SearchResult {
+                    topic: topic.to_string(),
+                    url: url.to_string(),
+                    page: page as u32,
+                    text: text.to_string(),
+                });
+            }
+        }
+    }
+    search_results
 }
 
 impl Searcher for OpenSearcher {
@@ -88,7 +113,7 @@ impl Searcher for OpenSearcher {
         query: &str,
         search_method: SearchMethod,
         topic_title: Option<&str>,
-    ) -> Result<Value, reqwest::Error> {
+    ) -> Result<Vec<SearchResult>, reqwest::Error> {
         let mut must: Vec<Value> = vec![];
         match search_method {
             SearchMethod::Text => {
@@ -128,32 +153,32 @@ impl Searcher for OpenSearcher {
             .unwrap();
         let query_result: Value = response.json().await.expect("Failed to parse response");
 
-        return Ok(query_result);
+        return Ok(extract_seaarch_results(query_result));
     }
 }
 
-#[allow(dead_code)]
-#[tokio::main]
-async fn main() {
-    use lawfirm_agents::connectors::opensearch::create_client;
+// #[allow(dead_code)]
+// #[tokio::main]
+// async fn main() {
+//     use lawfirm_agents::connectors::opensearch::create_client;
 
-    let opensearch_client = create_client();
-    let searcher = OpenSearcher::new(opensearch_client);
-    let query_result = searcher
-        .search_data_in_opensearch(
-            "What is the law on real estate?",
-            SearchMethod::Vector,
-            Some("Real Estate"),
-        )
-        .await;
-    println!("{:?}", query_result);
+//     let opensearch_client = create_client();
+//     let searcher = OpenSearcher::new(opensearch_client);
+//     let query_result = searcher
+//         .search_data_in_opensearch(
+//             "What is the law on real estate?",
+//             SearchMethod::Vector,
+//             Some("Real Estate"),
+//         )
+//         .await;
+//     println!("{:?}", query_result);
 
-    let query_result = searcher
-        .search_data_in_opensearch(
-            "What is the law on real estate?",
-            SearchMethod::Text,
-            Some("Real Estate"),
-        )
-        .await;
-    println!("{:?}", query_result);
-}
+//     let query_result = searcher
+//         .search_data_in_opensearch(
+//             "What is the law on real estate?",
+//             SearchMethod::Text,
+//             Some("Real Estate"),
+//         )
+//         .await;
+//     println!("{:?}", query_result);
+// }
