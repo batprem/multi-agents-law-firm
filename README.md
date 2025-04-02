@@ -56,6 +56,11 @@ ollama pull all-minilm
 ## Rust
 The project includes a Rust implementation of the legal research system that provides a high-performance, concurrent solution for processing legal queries. The Rust version follows the same multi-agent architecture as the Python implementation but leverages Rust's async/await capabilities and strong type system.
 
+## Run
+```bash
+dotenv run -- cargo run -- --question "What is the legal framework for investing in real estates?"
+```
+
 ### Project Structure
 ```
 src/
