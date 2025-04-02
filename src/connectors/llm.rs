@@ -95,10 +95,7 @@ impl LLMConnector {
         Ok(content)
     }
 
-    pub async fn request_streaming_llm(
-        &self,
-        prompt: &str,
-    ) -> Result<impl Stream<Item = String>, reqwest::Error> {
+    pub async fn request_streaming_llm(&self, prompt: String) -> Result<impl Stream<Item = String>, reqwest::Error> {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(
@@ -109,7 +106,7 @@ impl LLMConnector {
         let mut messages = self.initial_message.clone();
         messages.push(Message {
             role: "user".to_string(),
-            content: prompt.to_string(),
+            content: prompt,
         });
 
         let mut json_data = json!({

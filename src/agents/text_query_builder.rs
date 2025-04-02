@@ -1,4 +1,4 @@
-use lawfirm_agents::connectors::llm::{LLMConnector, Message};
+use crate::connectors::llm::{LLMConnector, Message};
 use std::collections::HashMap;
 
 const SYSTEM_PROMPT: &str = "We have an Opensearch instant storing documents about code of conduct.
@@ -46,6 +46,7 @@ Based on the following question, what keywords should be queried in Opensearch
     }
 }
 
+#[allow(dead_code)]
 #[tokio::main]
 async fn main() {
     let text_query_builder = TextQueryBuilder::new(

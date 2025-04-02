@@ -4,7 +4,6 @@ use crate::types::SearchResult;
 use opensearch::{OpenSearch, SearchParts};
 use serde_json::{Value, json};
 use std::collections::HashMap;
-use tokio;
 
 pub trait Searcher {
     fn get_available_topics(&self) -> impl std::future::Future<Output = Option<(Vec<String>, String)>> + Send;
@@ -156,29 +155,3 @@ impl Searcher for OpenSearcher {
         return Ok(extract_seaarch_results(query_result));
     }
 }
-
-// #[allow(dead_code)]
-// #[tokio::main]
-// async fn main() {
-//     use lawfirm_agents::connectors::opensearch::create_client;
-
-//     let opensearch_client = create_client();
-//     let searcher = OpenSearcher::new(opensearch_client);
-//     let query_result = searcher
-//         .search_data_in_opensearch(
-//             "What is the law on real estate?",
-//             SearchMethod::Vector,
-//             Some("Real Estate"),
-//         )
-//         .await;
-//     println!("{:?}", query_result);
-
-//     let query_result = searcher
-//         .search_data_in_opensearch(
-//             "What is the law on real estate?",
-//             SearchMethod::Text,
-//             Some("Real Estate"),
-//         )
-//         .await;
-//     println!("{:?}", query_result);
-// }

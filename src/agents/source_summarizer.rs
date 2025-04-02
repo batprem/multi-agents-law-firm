@@ -1,9 +1,10 @@
-use lawfirm_agents::connectors::llm::{LLMConnector, Message};
-use lawfirm_agents::types::SearchResult;
-use std::{collections::HashMap};
+use crate::connectors::llm::{LLMConnector, Message};
+use crate::types::SearchResult;
+use std::collections::HashMap;
 use serde::Deserialize;
 use tokio;
 use futures::future::join_all;
+use serde_json::Value;
 
 const SYSTEM_PROMPT: &str = "You are an expert in lawfirm who are assigned to consider whether a text data source is useful to answer a user question or not. If yes, you will summarize the text which corespond user's question for another expert to write answer the user , otherwise, do nothing. You answer must be in JSON format with field:
 \"is_useful\": boolean determining whether the source is useful,
@@ -19,8 +20,9 @@ pub struct SourceSummarizer {
 
 #[derive(Debug, Deserialize)]
 pub struct Summary {
-    is_useful: bool,
-    summarize: String,
+    pub is_useful: bool,
+    pub summarize: String,
+    pub page: u32,
 }
 
 impl SourceSummarizer {
@@ -47,16 +49,20 @@ impl SourceSummarizer {
 
 {question}")
     }
-    pub async fn summarize(&self, text_source: &str, question: &str) -> Summary {
+    pub async fn summarize(&self, text_source: &str, question: &str, page: u32) -> Summary {
         let prompt = self.construct_prompt(text_source, question);
         let response = self.llm_connector.request_llm(&prompt).await.unwrap();
         let llm_response = response.trim_matches(|c| "`json".chars().collect::<Vec<char>>().contains(&c)).to_string();
-        let json_response: Summary = serde_json::from_str(&llm_response).expect("Failed to parse response");
-        json_response
+        let json_response: Value = serde_json::from_str(&llm_response).expect("Failed to parse response");
+        Summary {
+            is_useful: json_response["is_useful"].as_bool().unwrap(),
+            summarize: json_response["summarize"].as_str().unwrap().to_string(),
+            page: page,
+        }
     }
     
     pub async fn summarize_into_context(&self, search_result: &SearchResult, question: &str) -> Summary{
-        self.summarize(&search_result.text, question).await
+        self.summarize(&search_result.text, question, search_result.page).await
     }
     pub async fn summarize_into_context_bulk(&self, search_results: &[SearchResult], question: &str) -> Vec<Summary> {
         let futures = search_results.iter().map(|result| self.summarize_into_context(result, question));
@@ -81,7 +87,7 @@ async fn main() {
         page: 1,
         text: sample_text_1,
     };
-    let sample_text_2 = r#"" 3.10 “pooled retirement fund” or “PRF” has the same meaning as “pooling agreement” in the Occupational Retirement Schemes Ordinance (Chapter 426 of Laws of Hong Kong)."#.to_string();
+    let sample_text_2 = r#"" 3.10 "pooled retirement fund" or "PRF" has the same meaning as "pooling agreement" in the Occupational Retirement Schemes Ordinance (Chapter 426 of Laws of Hong Kong)."#.to_string();
     let search_result_2 = SearchResult {
         topic: "Investing in real estates".to_string(),
         url: "https://www.investinginrealestates.com".to_string(),

@@ -1,4 +1,4 @@
-use lawfirm_agents::connectors::llm::{LLMConnector, Message};
+use crate::connectors::llm::{LLMConnector, Message};
 use std::collections::HashMap;
 use futures_core::stream::Stream;
 
@@ -27,7 +27,7 @@ impl UserInteractive {
         let llm_connector = LLMConnector::new(url, model, api_key, config, Some(initial_message));
         UserInteractive { llm_connector }
     }
-    fn construct_prompt(question: &str, topic: &str, contexts: Vec<String>, source_url: &str) -> String {
+    fn construct_prompt(&self,question: &str, topic: &str, contexts: Vec<String>, source_url: &str) -> String {
         let context_prompt = contexts.join("\n- ");
         format!(
             "
@@ -43,17 +43,17 @@ URL: {}
         )
     }
 
-    pub async fn answer(&self, question: &str, topic: &str, contexts: Vec<String>) -> Result<impl Stream<Item = String>, reqwest::Error> {
-        self.llm_connector.request_streaming_llm(question).await
+    pub async fn answer(&self, question: &str, topic: &str, contexts: Vec<String>, source_url: &str) -> Result<impl Stream<Item = String>, reqwest::Error> {
+        self.llm_connector.request_streaming_llm(self.construct_prompt(question, topic, contexts, source_url)).await
     }
 }
 
+#[allow(dead_code)]
 #[tokio::main]
 async fn main() {
-    use futures_util::{StreamExt, FutureExt};
+    use futures_util::StreamExt;
     use futures_util::pin_mut;  
     use std::io::Write;
-    use serde_json::Value;
 
 
     let user_interactive = UserInteractive::new(
@@ -62,7 +62,6 @@ async fn main() {
         "Not use".to_string(),
         None,
     );
-    // {' 'contexts': ['"You should know the transaction history of properties, renovation plans with costs and financing, operating data like occupancy rate, tenant mix, lease details, borrowing policy, risk mitigation measures, dividend policy, insurance arrangements, and exit strategy in case of divestment." - Page: 79', '"When making property investments, you should consider factors like demographics, economic risks, political risks, legal risks and tax considerations, policies affecting property investments, the overall property market overview, competitive dynamics in the rental market, operational requirements, and rules governing property ownership and tenancy matters." - Page: 78', '"at least 75% of the gross asset value of a scheme shall be invested in real estate that generates recurrent rental income at all times." - Page: 37', '"The offering document of the scheme shall clearly include a discussion of the business plan for property investment and management covering the scope and type of investments made or intended to be made by the scheme, including the type(s) of real estate (e.g. residential/commercial/industrial)." - Page: 78'], 'stream': True}
 
     let question = "I want to invest in real estates. What detail should I know?";
     let topic = "Code on Real Estate Investment Trusts";
@@ -72,7 +71,7 @@ async fn main() {
         "at least 75% of the gross asset value of a scheme shall be invested in real estate that generates recurrent rental income at all times.".to_string(),
         "The offering document of the scheme shall clearly include a discussion of the business plan for property investment and management covering the scope and type of investments made or intended to be made by the scheme, including the type(s) of real estate (e.g. residential/commercial/industrial).".to_string()
     ];
-    let stream = user_interactive.answer(question, topic, contexts).await.unwrap();
+    let stream = user_interactive.answer(question, topic, contexts, "https://www.investinginrealestates.com").await.unwrap();
     pin_mut!(stream);
     while let Some(chunk) = stream.next().await {
         print!("{}", chunk);
