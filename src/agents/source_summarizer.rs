@@ -1,3 +1,9 @@
+//! Source summarization agent for legal research.
+//! 
+//! This module implements an agent that analyzes and summarizes legal documents
+//! to determine their relevance to a user's question. It uses LLM to evaluate
+//! the usefulness of each source and generate concise summaries of relevant content.
+
 use crate::connectors::llm::{LLMConnector, Message};
 use crate::types::SearchResult;
 use std::collections::HashMap;
@@ -6,18 +12,29 @@ use tokio;
 use futures::future::join_all;
 use serde_json::Value;
 
+/// System prompt that instructs the LLM to evaluate and summarize legal documents
 const SYSTEM_PROMPT: &str = "You are an expert in lawfirm who are assigned to consider whether a text data source is useful to answer a user question or not. If yes, you will summarize the text which corespond user's question for another expert to write answer the user , otherwise, do nothing. You answer must be in JSON format with field:
 \"is_useful\": boolean determining whether the source is useful,
 \"summarize\": string your summarization refering the part for the text or empty string if not useful
 
 return your answer only and do not include prologue, prefix or suffix";
 
-
+/// Agent responsible for analyzing and summarizing legal documents.
+/// 
+/// This agent uses an LLM to evaluate the relevance of legal documents to a user's
+/// question and generate concise summaries of the relevant content.
 pub struct SourceSummarizer {
+    /// The LLM connector used for making requests to the language model
     llm_connector: LLMConnector,
 }
 
-
+/// Represents a summary of a legal document with its relevance and content.
+/// 
+/// # Fields
+/// 
+/// * `is_useful` - Whether the document contains relevant information
+/// * `summarize` - A concise summary of the relevant content
+/// * `page` - The page number in the source document
 #[derive(Debug, Deserialize)]
 pub struct Summary {
     pub is_useful: bool,
@@ -26,6 +43,14 @@ pub struct Summary {
 }
 
 impl SourceSummarizer {
+    /// Creates a new SourceSummarizer instance.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `url` - The URL of the LLM service
+    /// * `model` - The name of the LLM model to use
+    /// * `api_key` - The API key for authentication
+    /// * `config` - Optional configuration parameters for the LLM connector
     pub fn new(
         url: String,
         model: String,
@@ -41,6 +66,16 @@ impl SourceSummarizer {
         SourceSummarizer { llm_connector }
     }
 
+    /// Constructs a prompt for document summarization.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `text_source` - The text content to analyze
+    /// * `question` - The user's question to evaluate relevance against
+    /// 
+    /// # Returns
+    /// 
+    /// A formatted prompt string ready to be sent to the LLM
     pub fn construct_prompt(&self, text_source: &str, question: &str) -> String {
         format!("# Source:
 {text_source}
@@ -49,6 +84,22 @@ impl SourceSummarizer {
 
 {question}")
     }
+
+    /// Summarizes a single text source and evaluates its relevance.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `text_source` - The text content to analyze
+    /// * `question` - The user's question to evaluate relevance against
+    /// * `page` - The page number in the source document
+    /// 
+    /// # Returns
+    /// 
+    /// A Summary struct containing the evaluation and summary
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the LLM response cannot be parsed as valid JSON
     pub async fn summarize(&self, text_source: &str, question: &str, page: u32) -> Summary {
         let prompt = self.construct_prompt(text_source, question);
         let response = self.llm_connector.request_llm(&prompt).await.unwrap();
@@ -61,14 +112,34 @@ impl SourceSummarizer {
         }
     }
     
-    pub async fn summarize_into_context(&self, search_result: &SearchResult, question: &str) -> Summary{
+    /// Summarizes a search result and evaluates its relevance.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `search_result` - The search result to analyze
+    /// * `question` - The user's question to evaluate relevance against
+    /// 
+    /// # Returns
+    /// 
+    /// A Summary struct containing the evaluation and summary
+    pub async fn summarize_into_context(&self, search_result: &SearchResult, question: &str) -> Summary {
         self.summarize(&search_result.text, question, search_result.page).await
     }
+
+    /// Summarizes multiple search results in parallel.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `search_results` - A slice of search results to analyze
+    /// * `question` - The user's question to evaluate relevance against
+    /// 
+    /// # Returns
+    /// 
+    /// A vector of Summary structs containing evaluations and summaries
     pub async fn summarize_into_context_bulk(&self, search_results: &[SearchResult], question: &str) -> Vec<Summary> {
         let futures = search_results.iter().map(|result| self.summarize_into_context(result, question));
         join_all(futures).await
     }
-    
 }
 
 #[allow(dead_code)]

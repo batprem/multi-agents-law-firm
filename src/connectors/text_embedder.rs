@@ -1,3 +1,9 @@
+//! Text embedding connector for legal research.
+//! 
+//! This module provides functionality for converting text into vector embeddings
+//! using an embedding model service. These embeddings are used for semantic
+//! search and similarity comparisons in the legal research system.
+
 use crate::constants::{EMBEDDING_MODEL, EMBEDDING_URL};
 use reqwest::Client;
 use serde_json::Value;
@@ -5,7 +11,29 @@ use std::error::Error;
 use std::io::Error as IOError;
 use tokio;
 
-
+/// Converts text into a vector embedding using the specified embedding model.
+/// 
+/// This function sends the input text to an embedding service and returns
+/// a vector representation of the text that can be used for semantic search
+/// and similarity comparisons.
+/// 
+/// # Arguments
+/// 
+/// * `text` - The text to convert into an embedding
+/// * `embedding_model` - The name of the embedding model to use
+/// 
+/// # Returns
+/// 
+/// A Result containing either:
+/// * A vector of f64 values representing the text embedding
+/// * A boxed error if the embedding process fails
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// * The HTTP request fails
+/// * The response cannot be parsed as valid JSON
+/// * The embedding data is not in the expected format
 pub async fn get_embedding(text: &str, embedding_model: &str) -> Result<Vec<f64>, Box<dyn Error>> {
     let client = Client::new();
     let response = client

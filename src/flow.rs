@@ -1,3 +1,13 @@
+//! Flow control and orchestration module for the Law Firm application.
+//! 
+//! This module implements the main workflow of the legal research system, coordinating
+//! between different components including:
+//! - Topic selection
+//! - Query building
+//! - Search execution (both text and vector-based)
+//! - Result summarization
+//! - User interaction and response generation
+
 use crate::tools::searcher::{OpenSearcher, Searcher, SearchMethod};
 use crate::connectors::opensearch::create_client;
 use crate::constants::{LLM_HOST, MODEL};
@@ -8,9 +18,26 @@ use std::io::Write;
 use serde_json::Value;
 use tokio;
 
-
-
-
+/// Main workflow function that orchestrates the legal research process.
+/// 
+/// This function implements the complete workflow for processing a legal question:
+/// 1. Initializes necessary components (OpenSearch client, LLM connector)
+/// 2. Selects relevant legal topic
+/// 3. Builds search query
+/// 4. Performs both text and vector-based searches
+/// 5. Summarizes search results
+/// 6. Generates and streams response to the user
+/// 
+/// # Arguments
+/// 
+/// * `question` - The legal question to research
+/// 
+/// # Example
+/// 
+/// ```
+/// let question = "What is the legal framework for investing in real estates?";
+/// flow(question).await;
+/// ```
 pub async fn flow(question: &str) {
     let opensearch_client = create_client();
     let searcher = OpenSearcher::new(opensearch_client);
