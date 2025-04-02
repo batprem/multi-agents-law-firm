@@ -1,5 +1,5 @@
 //! Text query builder agent for legal research.
-//! 
+//!
 //! This module implements an agent that converts natural language questions
 //! into optimized OpenSearch queries. It uses LLM to understand the user's
 //! intent and generate appropriate search terms for legal document retrieval.
@@ -13,7 +13,7 @@ You are a data engineer who expertise Opensearch query.
 Please suggest text query based on user's question return your answer only  and do not include prologue, prefix or suffix";
 
 /// Agent responsible for building optimized OpenSearch queries from natural language questions.
-/// 
+///
 /// This agent uses an LLM to analyze the user's question and generate appropriate
 /// search terms that will yield relevant legal documents.
 pub struct TextQueryBuilder {
@@ -23,9 +23,9 @@ pub struct TextQueryBuilder {
 
 impl TextQueryBuilder {
     /// Creates a new TextQueryBuilder instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `url` - The URL of the LLM service
     /// * `model` - The name of the LLM model to use
     /// * `api_key` - The API key for authentication
@@ -46,26 +46,26 @@ impl TextQueryBuilder {
     }
 
     /// Makes a request to the LLM with the given prompt.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `user_prompt` - The prompt to send to the LLM
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An Option containing the LLM's response if successful, or None if the request fails
     pub async fn request_llm(&self, user_prompt: &str) -> Option<String> {
         self.llm_connector.request_llm(user_prompt).await.ok()
     }
 
     /// Constructs a prompt for query building.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `question` - The user's question to convert into a search query
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A formatted prompt string ready to be sent to the LLM
     pub fn construct_prompt(&self, question: &str) -> String {
         format!(
@@ -80,17 +80,17 @@ Based on the following question, what keywords should be queried in Opensearch
     }
 
     /// Builds an OpenSearch query from a natural language question.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `question` - The user's question to convert into a search query
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A string containing the generated OpenSearch query
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the LLM request fails or returns no response
     pub async fn build(&self, question: &str) -> String {
         let prompt = self.construct_prompt(question);

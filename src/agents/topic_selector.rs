@@ -1,20 +1,20 @@
 //! Topic selection agent for legal research.
-//! 
+//!
 //! This module implements an agent that selects the most relevant legal topic
 //! from a list of available topics based on a user's question. It uses LLM
 //! to intelligently match the question to the most appropriate legal framework.
 
 use crate::connectors::llm::{LLMConnector, Message};
+use crate::constants::RETRY_COUNT;
 use std::collections::HashMap;
 use tokio;
-use crate::constants::RETRY_COUNT;
 
 /// System prompt used to instruct the LLM to return only a numeric response
 const SYSTEM_PROMPT: &str =
     "Pick a choice, please answer only a number and do not include prologue, prefix or suffix";
 
 /// Agent responsible for selecting the most relevant legal topic for a given question.
-/// 
+///
 /// This agent uses an LLM to analyze the user's question and match it with the most
 /// appropriate legal topic from a predefined list.
 pub struct TopicSelector {
@@ -24,9 +24,9 @@ pub struct TopicSelector {
 
 impl TopicSelector {
     /// Creates a new TopicSelector instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `url` - The URL of the LLM service
     /// * `model` - The name of the LLM model to use
     /// * `api_key` - The API key for authentication
@@ -47,27 +47,27 @@ impl TopicSelector {
     }
 
     /// Makes a request to the LLM with the given prompt.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `user_prompt` - The prompt to send to the LLM
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either the LLM's response or a reqwest error
     pub async fn request_llm(&self, user_prompt: &str) -> Result<String, reqwest::Error> {
         self.llm_connector.request_llm(user_prompt).await
     }
 
     /// Constructs a prompt for topic selection.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `user_prompt` - The user's question
     /// * `topics_prompt` - The list of available topics
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A formatted prompt string ready to be sent to the LLM
     pub fn construct_prompt(&self, user_prompt: &str, topics_prompt: &str) -> String {
         format!("# Instruction:
@@ -81,28 +81,32 @@ Pick an index of document that you think that it can help answer the following q
     }
 
     /// Selects the most relevant topic for the given question.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `user_prompt` - The user's question
     /// * `topics_prompt` - The list of available topics
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either the index of the selected topic or an error message
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// The function will retry up to RETRY_COUNT times if the LLM response cannot be parsed
     /// as a valid index.
-    pub async fn select_topic(&self, user_prompt: &str, topics_prompt: &str) -> Result<usize, String> {
+    pub async fn select_topic(
+        &self,
+        user_prompt: &str,
+        topics_prompt: &str,
+    ) -> Result<usize, String> {
         let prompt = self.construct_prompt(user_prompt, &topics_prompt);
         for tried in 0..RETRY_COUNT {
             let response = self.request_llm(&prompt).await.unwrap();
             println!("Tried: {}", tried);
             match response.trim().parse::<usize>() {
                 Ok(index) => return Ok(index),
-                Err(_) => continue
+                Err(_) => continue,
             }
         }
         Err("Cannot parse to usize".to_string())
@@ -153,7 +157,10 @@ async fn main() {
         None,
     );
     let question = "I want to invest in real estates. What detail should I know?";
-    let selected_topic_index = topic_selector.select_topic(question, &topics).await.unwrap();
+    let selected_topic_index = topic_selector
+        .select_topic(question, &topics)
+        .await
+        .unwrap();
     println!(
         "Question:
 {}
@@ -164,6 +171,7 @@ Selected topic: {}",
 
     let selected_topic_index = topic_selector
         .select_topic("How to cook fried chicken?", &topics)
-        .await.unwrap();
+        .await
+        .unwrap();
     println!("{}", selected_topic_index);
 }

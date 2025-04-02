@@ -1,5 +1,5 @@
 //! OpenSearch connector for legal research.
-//! 
+//!
 //! This module provides functionality for connecting to and interacting with
 //! OpenSearch instances. It handles authentication and connection setup using
 //! environment-based configuration.
@@ -11,17 +11,17 @@ use opensearch::{
 };
 
 /// Creates a new OpenSearch client with authentication.
-/// 
+///
 /// This function initializes a connection to an OpenSearch instance using
 /// credentials and configuration from environment variables. It sets up
 /// a single-node connection pool with basic authentication.
-/// 
+///
 /// # Returns
-/// 
+///
 /// An OpenSearch client instance ready for use
-/// 
+///
 /// # Panics
-/// 
+///
 /// Panics if:
 /// * The OpenSearch URL from environment variables is invalid
 /// * The transport cannot be created with the provided credentials

@@ -1,5 +1,5 @@
 //! Language Model (LLM) connector for legal research.
-//! 
+//!
 //! This module provides functionality for interacting with language models through
 //! HTTP APIs. It supports both synchronous and streaming responses, with configurable
 //! parameters for model behavior.
@@ -15,9 +15,9 @@ use async_stream::stream;
 use futures_core::stream::Stream;
 
 /// Represents a message in a conversation with the language model.
-/// 
+///
 /// # Fields
-/// 
+///
 /// * `role` - The role of the message sender (e.g., "system", "user", "assistant")
 /// * `content` - The actual content of the message
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -27,12 +27,12 @@ pub struct Message {
 }
 
 /// Connector for interacting with language models via HTTP APIs.
-/// 
+///
 /// This struct manages the connection to a language model service, handling
 /// authentication, request formatting, and response parsing.
-/// 
+///
 /// # Fields
-/// 
+///
 /// * `api_key` - The API key for authentication
 /// * `model` - The name of the language model to use
 /// * `url` - The endpoint URL for the language model service
@@ -50,17 +50,17 @@ pub struct LLMConnector {
 
 impl LLMConnector {
     /// Creates a new LLMConnector instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `url` - The endpoint URL for the language model service
     /// * `model` - The name of the language model to use
     /// * `api_key` - The API key for authentication
     /// * `config` - Optional configuration parameters for the model
     /// * `initial_message` - Optional system messages to initialize the conversation
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// If no config is provided, default values are used:
     /// - max_tokens: 512
     /// - temperature: 0.6
@@ -94,17 +94,17 @@ impl LLMConnector {
     }
 
     /// Makes a synchronous request to the language model.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `prompt` - The prompt to send to the model
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either the model's response or a reqwest error
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// This method uses the configured parameters and initial messages
     /// when making the request.
     pub async fn request_llm(&self, prompt: &str) -> Result<String, reqwest::Error> {
@@ -152,20 +152,23 @@ impl LLMConnector {
     }
 
     /// Makes a streaming request to the language model.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `prompt` - The prompt to send to the model
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either a Stream of response chunks or a reqwest error
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// This method enables streaming responses, which is useful for real-time
     /// display of the model's output as it's being generated.
-    pub async fn request_streaming_llm(&self, prompt: String) -> Result<impl Stream<Item = String>, reqwest::Error> {
+    pub async fn request_streaming_llm(
+        &self,
+        prompt: String,
+    ) -> Result<impl Stream<Item = String>, reqwest::Error> {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(

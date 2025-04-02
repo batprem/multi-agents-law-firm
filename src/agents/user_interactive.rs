@@ -1,12 +1,12 @@
 //! User interaction agent for legal research.
-//! 
+//!
 //! This module implements an agent that generates human-readable responses to legal
 //! questions using summarized document content. It provides streaming responses with
 //! proper citations and encourages users to explore the source materials.
 
 use crate::connectors::llm::{LLMConnector, Message};
-use std::collections::HashMap;
 use futures_core::stream::Stream;
+use std::collections::HashMap;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -18,7 +18,7 @@ Your duty is to answer the question with confidence using the prepared data sour
 Please also add the reference of data source with URL to PDF file with page number and encourage user to find out more information with it";
 
 /// Agent responsible for generating human-readable responses to legal questions.
-/// 
+///
 /// This agent uses an LLM to synthesize information from summarized legal documents
 /// into coherent, well-referenced answers that are streamed to the user.
 pub struct UserInteractive {
@@ -28,9 +28,9 @@ pub struct UserInteractive {
 
 impl UserInteractive {
     /// Creates a new UserInteractive instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `url` - The URL of the LLM service
     /// * `model` - The name of the LLM model to use
     /// * `api_key` - The API key for authentication
@@ -51,21 +51,27 @@ impl UserInteractive {
     }
 
     /// Constructs a prompt for generating a response.
-    /// 
+    ///
     /// This function formats the user's question, topic, and document contexts
     /// into a structured prompt that the LLM can use to generate a response.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `question` - The user's question to answer
     /// * `topic` - The legal topic being discussed
     /// * `contexts` - Vector of summarized document content
     /// * `source_url` - URL to the source document
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A formatted prompt string ready to be sent to the LLM
-    fn construct_prompt(&self, question: &str, topic: &str, contexts: Vec<String>, source_url: &str) -> String {
+    fn construct_prompt(
+        &self,
+        question: &str,
+        topic: &str,
+        contexts: Vec<String>,
+        source_url: &str,
+    ) -> String {
         let context_prompt = contexts.join("\n- ");
         format!(
             "
@@ -83,13 +89,13 @@ URL: {}
 }
 
 /// A stream that combines the main response stream with reference information.
-/// 
+///
 /// This struct wraps a main response stream and appends formatted reference
 /// information at the end of the stream. It implements the Stream trait to
 /// provide a unified streaming interface.
-/// 
+///
 /// # Type Parameters
-/// 
+///
 /// * `S` - The type of the main response stream
 pub struct CombinedStream<S> {
     /// The main response stream from the LLM
@@ -121,20 +127,34 @@ where
 
 impl UserInteractive {
     /// Generates a streaming response to the user's question.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `question` - The user's question to answer
     /// * `topic` - The legal topic being discussed
     /// * `contexts` - Vector of summarized document content
     /// * `source_url` - URL to the source document
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either a Stream of response chunks or a reqwest error
-    pub async fn answer(&self, question: &str, topic: &str, contexts: Vec<String>, source_url: &str) -> Result<impl Stream<Item = String>, reqwest::Error> {
-        let main_response = self.llm_connector.request_streaming_llm(self.construct_prompt(question, topic, contexts.clone(), source_url)).await?;
-        
+    pub async fn answer(
+        &self,
+        question: &str,
+        topic: &str,
+        contexts: Vec<String>,
+        source_url: &str,
+    ) -> Result<impl Stream<Item = String>, reqwest::Error> {
+        let main_response = self
+            .llm_connector
+            .request_streaming_llm(self.construct_prompt(
+                question,
+                topic,
+                contexts.clone(),
+                source_url,
+            ))
+            .await?;
+
         // Create references text
         let mut references = format!("\n\n**Reference**\n> From: {}\n", source_url);
         let mut sorted_contexts = contexts.clone();
@@ -143,7 +163,13 @@ impl UserInteractive {
                 .and_then(|(_, num)| num.parse::<i32>().ok())
                 .unwrap_or(0)
         });
-        references.push_str(&sorted_contexts.iter().map(|c| format!("* {}", c)).collect::<Vec<_>>().join("\n"));
+        references.push_str(
+            &sorted_contexts
+                .iter()
+                .map(|c| format!("* {}", c))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        );
 
         Ok(CombinedStream {
             main_stream: Box::pin(main_response),
@@ -156,9 +182,8 @@ impl UserInteractive {
 #[tokio::main]
 async fn main() {
     use futures_util::StreamExt;
-    use futures_util::pin_mut;  
+    use futures_util::pin_mut;
     use std::io::Write;
-
 
     let user_interactive = UserInteractive::new(
         "http://localhost:11434/api/chat".to_string(),
@@ -175,10 +200,18 @@ async fn main() {
         "at least 75% of the gross asset value of a scheme shall be invested in real estate that generates recurrent rental income at all times.".to_string(),
         "The offering document of the scheme shall clearly include a discussion of the business plan for property investment and management covering the scope and type of investments made or intended to be made by the scheme, including the type(s) of real estate (e.g. residential/commercial/industrial).".to_string()
     ];
-    let stream = user_interactive.answer(question, topic, contexts, "https://www.investinginrealestates.com").await.unwrap();
+    let stream = user_interactive
+        .answer(
+            question,
+            topic,
+            contexts,
+            "https://www.investinginrealestates.com",
+        )
+        .await
+        .unwrap();
     pin_mut!(stream);
     while let Some(chunk) = stream.next().await {
         print!("{}", chunk);
         std::io::stdout().flush().unwrap();
-    };
+    }
 }

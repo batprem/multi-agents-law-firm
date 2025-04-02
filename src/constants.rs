@@ -4,9 +4,9 @@
 use std::env;
 
 /// Configuration structure for OpenSearch connection.
-/// 
+///
 /// # Fields
-/// 
+///
 /// * `username` - The username for OpenSearch authentication
 /// * `password` - The password for OpenSearch authentication
 /// * `url` - The URL of the OpenSearch instance
@@ -18,13 +18,13 @@ pub struct OpenSearchConfig {
 
 impl OpenSearchConfig {
     /// Creates a new OpenSearchConfig instance from environment variables.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new OpenSearchConfig instance with values from environment variables.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if any of the required environment variables are not set:
     /// - OPENSEARCH_USERNAME
     /// - OPENSEARCH_PASSWORD

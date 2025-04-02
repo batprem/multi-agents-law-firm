@@ -1,5 +1,5 @@
 //! Search functionality for legal research.
-//! 
+//!
 //! This module provides tools for searching legal documents using both text-based
 //! and vector-based search methods. It supports topic-based filtering and
 //! retrieves relevant document sections with their metadata.
@@ -12,30 +12,32 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Trait defining the interface for document search operations.
-/// 
+///
 /// This trait provides methods for:
 /// * Retrieving available legal topics
 /// * Searching documents using different search methods
 pub trait Searcher {
     /// Retrieves a list of available legal topics and their descriptions.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An Option containing either:
     /// * A tuple of (topic list, formatted topic choices)
     /// * None if no topics are available
-    fn get_available_topics(&self) -> impl std::future::Future<Output = Option<(Vec<String>, String)>> + Send;
+    fn get_available_topics(
+        &self,
+    ) -> impl std::future::Future<Output = Option<(Vec<String>, String)>> + Send;
 
     /// Searches for documents using the specified method and topic filter.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `query` - The search query
     /// * `search_method` - The search method to use (text or vector)
     /// * `topic_title` - Optional topic to filter results
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A Result containing either:
     /// * A vector of search results
     /// * A reqwest error if the search fails
@@ -48,7 +50,7 @@ pub trait Searcher {
 }
 
 /// Implementation of the Searcher trait using OpenSearch.
-/// 
+///
 /// This struct provides concrete implementations of the search operations
 /// using an OpenSearch client.
 pub struct OpenSearcher {
@@ -58,9 +60,9 @@ pub struct OpenSearcher {
 
 impl OpenSearcher {
     /// Creates a new OpenSearcher instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `client` - The OpenSearch client to use for searches
     pub fn new(client: OpenSearch) -> Self {
         OpenSearcher { client }
@@ -68,9 +70,9 @@ impl OpenSearcher {
 }
 
 /// Enum defining the available search methods.
-/// 
+///
 /// # Variants
-/// 
+///
 /// * `Text` - Traditional text-based search using keyword matching
 /// * `Vector` - Semantic search using vector embeddings
 pub enum SearchMethod {
@@ -79,13 +81,13 @@ pub enum SearchMethod {
 }
 
 /// Extracts search results from the OpenSearch response.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `json_result` - The JSON response from OpenSearch
-/// 
+///
 /// # Returns
-/// 
+///
 /// A vector of SearchResult structs containing the extracted information
 fn extract_seaarch_results(json_result: Value) -> Vec<SearchResult> {
     let mut search_results: Vec<SearchResult> = vec![];
@@ -112,7 +114,7 @@ fn extract_seaarch_results(json_result: Value) -> Vec<SearchResult> {
 
 impl Searcher for OpenSearcher {
     /// Retrieves available legal topics using OpenSearch aggregations.
-    /// 
+    ///
     /// This implementation queries OpenSearch to get a list of unique topics
     /// and their associated URLs, then formats them for display.
     async fn get_available_topics(&self) -> Option<(Vec<String>, String)> {
@@ -169,7 +171,7 @@ impl Searcher for OpenSearcher {
     }
 
     /// Performs a search in OpenSearch using the specified method.
-    /// 
+    ///
     /// This implementation supports both text-based and vector-based search,
     /// with optional topic filtering. For vector search, it first converts
     /// the query into an embedding before searching.
