@@ -13,6 +13,7 @@ use crate::constants::{LLM_HOST, MODEL};
 use crate::tools::searcher::{OpenSearcher, SearchMethod, Searcher};
 use futures_util::StreamExt;
 use futures_util::pin_mut;
+use log;
 use std::io::Write;
 use tokio;
 
@@ -40,7 +41,7 @@ pub async fn flow(question: &str) {
     let opensearch_client = create_client();
     let searcher = OpenSearcher::new(opensearch_client);
     let (topic_list, topics) = searcher.get_available_topics().await.unwrap();
-    println!("Topics:\n{}", topics);
+    log::debug!("Topics:\n{}", topics);
 
     let topic_selector = crate::agents::topic_selector::TopicSelector::new(
         LLM_HOST.to_string(),
@@ -54,19 +55,37 @@ pub async fn flow(question: &str) {
         "Not use".to_string(),
         None,
     );
+    let rejector = crate::agents::rejector::RejectorAgent::new(
+        LLM_HOST.to_string(),
+        MODEL.to_string(),
+        "Not use".to_string(),
+        None,
+    );
     // let question = "What is the legal framework for investing in real estates?";
     // Select the topic
     let selected_topic_index = topic_selector
         .select_topic(question, &topics)
         .await
         .unwrap();
+    if selected_topic_index == 0 {
+        let stream = rejector
+            .generate_rejection_message(question, "not_legal")
+            .await
+            .unwrap();
+        pin_mut!(stream);
+        while let Some(chunk) = stream.next().await {
+            print!("{}", chunk);
+            std::io::stdout().flush().unwrap();
+        }
+        return;
+    }
     let topic_title = topic_list[selected_topic_index - 1].clone();
-    println!("Selected topic {}", topic_list[selected_topic_index - 1]);
+    log::debug!("Selected topic {}", topic_list[selected_topic_index - 1]);
 
     // Build query
     let query_text = text_query_builder.build(question).await;
-    println!("Query text: {}", query_text);
-    println!("{query_text}");
+    log::debug!("Query text: {}", query_text);
+    log::debug!("{query_text}");
 
     // Query
     let (search_text_result, search_vector_result) = tokio::join!(
@@ -78,7 +97,18 @@ pub async fn flow(question: &str) {
         &(search_vector_result.unwrap())[..],
     ]
     .concat();
-
+    if search_results.is_empty() {
+        let stream = rejector
+            .generate_rejection_message(question, "no_info")
+            .await
+            .unwrap();
+        pin_mut!(stream);
+        while let Some(chunk) = stream.next().await {
+            print!("{}", chunk);
+            std::io::stdout().flush().unwrap();
+        }
+        return;
+    }
     // Summarize
     let summarizer = crate::agents::source_summarizer::SourceSummarizer::new(
         LLM_HOST.to_string(),

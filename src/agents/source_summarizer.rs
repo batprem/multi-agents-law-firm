@@ -7,6 +7,7 @@
 use crate::connectors::llm::{LLMConnector, Message};
 use crate::types::SearchResult;
 use futures::future::join_all;
+use log;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -188,5 +189,5 @@ async fn main() {
         .into_iter()
         .filter(|result| result.is_useful)
         .collect();
-    println!("{:?}", summary);
+    log::debug!("{:?}", summary);
 }

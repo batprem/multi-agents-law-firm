@@ -111,5 +111,5 @@ async fn main() {
     let query = text_query_builder
         .build("I want to invest in real estates. What detail should I know?")
         .await;
-    println!("{}", query);
+    log::debug!("{}", query);
 }

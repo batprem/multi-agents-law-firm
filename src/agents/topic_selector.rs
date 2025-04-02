@@ -6,6 +6,7 @@
 
 use crate::connectors::llm::{LLMConnector, Message};
 use crate::constants::RETRY_COUNT;
+use log;
 use std::collections::HashMap;
 use tokio;
 
@@ -103,7 +104,7 @@ Pick an index of document that you think that it can help answer the following q
         let prompt = self.construct_prompt(user_prompt, &topics_prompt);
         for tried in 0..RETRY_COUNT {
             let response = self.request_llm(&prompt).await.unwrap();
-            println!("Tried: {}", tried);
+            log::debug!("Tried: {}", tried);
             match response.trim().parse::<usize>() {
                 Ok(index) => return Ok(index),
                 Err(_) => continue,
@@ -173,5 +174,5 @@ Selected topic: {}",
         .select_topic("How to cook fried chicken?", &topics)
         .await
         .unwrap();
-    println!("{}", selected_topic_index);
+    log::debug!("{}", selected_topic_index);
 }
