@@ -11,11 +11,9 @@
 use crate::tools::searcher::{OpenSearcher, Searcher, SearchMethod};
 use crate::connectors::opensearch::create_client;
 use crate::constants::{LLM_HOST, MODEL};
-use futures::stream;
-use futures_util::{StreamExt, FutureExt};
+use futures_util::StreamExt;
 use futures_util::pin_mut;
 use std::io::Write;
-use serde_json::Value;
 use tokio;
 
 /// Main workflow function that orchestrates the legal research process.
@@ -44,14 +42,6 @@ pub async fn flow(question: &str) {
     let (topic_list, topics) = searcher.get_available_topics().await.unwrap();
     println!("Topics:\n{}", topics);
     
-
-    let llm = crate::connectors::llm::LLMConnector::new(
-        LLM_HOST.to_string(),
-        MODEL.to_string(),
-        "Not use".to_string(),
-        None,
-        None,
-    );
 
     let topic_selector = crate::agents::topic_selector::TopicSelector::new(
         LLM_HOST.to_string(),
@@ -84,15 +74,11 @@ pub async fn flow(question: &str) {
         searcher.search_data_in_opensearch(&query_text, SearchMethod::Text, Some(&topic_title)),
         searcher.search_data_in_opensearch(&query_text, SearchMethod::Vector, Some(&topic_title))
     );
-    let (search_text_result, search_vector_result) = tokio::join!(
-        searcher.search_data_in_opensearch(&query_text, SearchMethod::Text, Some(&topic_title)),
-        searcher.search_data_in_opensearch(&query_text, SearchMethod::Vector, Some(&topic_title))
-    );
     let search_results = [
         &(search_text_result.unwrap())[..],
         &(search_vector_result.unwrap())[..]
     ].concat();
-    // println!("{:?}", search_text_result_raw);
+
     // Summarize
     let summarizer = crate::agents::source_summarizer::SourceSummarizer::new(
         LLM_HOST.to_string(),
