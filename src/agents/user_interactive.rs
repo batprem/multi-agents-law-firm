@@ -102,6 +102,8 @@ pub struct CombinedStream<S> {
     main_stream: Pin<Box<S>>,
     /// Optional reference information to append at the end
     references: Option<String>,
+    /// Whether the main stream has been exhausted
+    main_stream_done: bool,
 }
 
 impl<S> Stream for CombinedStream<S>
@@ -111,9 +113,15 @@ where
     type Item = String;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        // First try to get items from the main stream
-        if let Poll::Ready(Some(item)) = self.main_stream.as_mut().poll_next(cx) {
-            return Poll::Ready(Some(item));
+        // First try to get items from the main stream if it's not done
+        if !self.main_stream_done {
+            match self.main_stream.as_mut().poll_next(cx) {
+                Poll::Ready(Some(item)) => return Poll::Ready(Some(item)),
+                Poll::Ready(None) => {
+                    self.main_stream_done = true;
+                }
+                Poll::Pending => return Poll::Pending,
+            }
         }
 
         // If main stream is done, return the references if they exist
@@ -174,6 +182,7 @@ impl UserInteractive {
         Ok(CombinedStream {
             main_stream: Box::pin(main_response),
             references: Some(references),
+            main_stream_done: false,
         })
     }
 }
