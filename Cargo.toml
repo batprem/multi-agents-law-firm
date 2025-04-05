@@ -1,0 +1,56 @@
+[package]
+name = "lawfirm_agents"
+version = "0.1.0"
+edition = "2024"
+default-run = "main"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+async-stream = "0.3.6"
+futures = "0.3.31"
+futures-core = "0.3.31"
+futures-util = "0.3.31"
+opensearch = "2.3.0"
+reqwest = {version="0.12.15", features=["json", "stream"]}
+serde = "1.0.219"
+serde_json = "1.0.140"
+tokio = {version = "*", features = ["full"]}
+tokio-macros = "2.5.0"
+tokio-stream = "0.1.17"
+clap = { version = "4.5.1", features = ["derive"] }
+log = "0.4.20"
+env_logger = "0.11.2"
+
+
+[[bin]]
+name = "main"
+default = true
+path = "src/main.rs"
+
+# [[bin]]
+# name = "topic_selector"
+# path = "src/agents/topic_selector.rs"
+
+# [[bin]]
+# name = "text_query_builder"
+# path = "src/agents/text_query_builder.rs"
+
+# [[bin]]
+# name = "text_embedder"
+# path = "src/connectors/text_embedder.rs"
+
+
+# [[bin]]
+# name = "searcher"
+# path = "src/tools/searcher.rs"
+
+# [[bin]]
+# name = "source_summarizer"
+# path = "src/agents/source_summarizer.rs"
+
+# [[bin]]
+# name = "user_interactive"
+# path = "src/agents/user_interactive.rs"
+

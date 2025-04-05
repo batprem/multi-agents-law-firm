@@ -53,6 +53,75 @@ ollama pull all-minilm
 1. Python version in this project is `3.11`
 2. install requiremens by run `pip install requirements.txt`
 
+## Rust
+The project includes a Rust implementation of the legal research system that provides a high-performance, concurrent solution for processing legal queries. The Rust version follows the same multi-agent architecture as the Python implementation but leverages Rust's async/await capabilities and strong type system.
+
+## Run
+```bash
+dotenv run -- cargo run -- --question "What is the legal framework for investing in real estates?"
+```
+
+### Project Structure
+```
+src/
+├── agents/         # LLM-based agents for different tasks
+├── connectors/     # External service connectors (OpenSearch, LLM)
+├── tools/          # Utility tools and services
+├── constants.rs    # Application constants
+├── flow.rs         # Main workflow orchestration
+├── lib.rs          # Library exports
+├── main.rs         # Application entry point
+└── types.rs        # Custom type definitions
+```
+
+### Key Components
+
+1. **Flow Orchestration** (`flow.rs`)
+   - Coordinates the entire legal research process
+   - Manages async operations for concurrent processing
+   - Handles streaming responses to users
+
+2. **Agents**
+   - Topic Selector: Identifies relevant legal topics
+   - Text Query Builder: Constructs search queries
+   - Source Summarizer: Processes and summarizes search results
+   - User Interactive: Generates final responses
+
+3. **Connectors**
+   - OpenSearch: Vector and text-based search capabilities
+   - LLM: Integration with language models for processing
+
+### Usage
+```rust
+use lawfirm_agents::flow::flow;
+
+#[tokio::main]
+async fn main() {
+    let question = "What is the legal framework for investing in real estates?";
+    flow(question).await;
+}
+```
+
+### Features
+- Async/await for concurrent processing
+- Streaming responses for real-time output
+- Strong type safety and error handling
+- Efficient memory management
+- Integration with OpenSearch for vector and text search
+
+### Building and Running
+1. Ensure you have Rust installed (latest stable version recommended)
+2. Build the project:
+   ```bash
+   cargo build
+   ```
+3. Run the application:
+   ```bash
+   cargo run
+   ```
+
+The Rust implementation provides a performant alternative to the Python version, particularly suitable for high-throughput scenarios or when running in resource-constrained environments.
+
 # Data ingestion
 
 <img src="assets/Data ingestion (1).png">
