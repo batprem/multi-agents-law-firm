@@ -90,7 +90,7 @@ pub enum SearchMethod {
 /// # Returns
 ///
 /// A vector of SearchResult structs containing the extracted information
-fn extract_seaarch_results(json_result: Value) -> Vec<SearchResult> {
+fn extract_search_results(json_result: Value) -> Vec<SearchResult> {
     let mut search_results: Vec<SearchResult> = vec![];
 
     if let Some(hits) = json_result["hits"]["hits"].as_array() {
@@ -221,6 +221,6 @@ impl Searcher for OpenSearcher {
             .unwrap();
         let query_result: Value = response.json().await.expect("Failed to parse response");
 
-        return Ok(extract_seaarch_results(query_result));
+        return Ok(extract_search_results(query_result));
     }
 }
