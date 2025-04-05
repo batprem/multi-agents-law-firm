@@ -27,20 +27,21 @@ pub trait Searcher {
     fn get_available_topics(
         &self,
     ) -> impl std::future::Future<Output = Option<(Vec<String>, String)>> + Send;
-
     /// Searches for documents using the specified method and topic filter.
+    ///
+    /// This is an asynchronous function that returns a Future which resolves to the search results.
     ///
     /// # Arguments
     ///
-    /// * `query` - The search query
+    /// * `query` - The search query string
     /// * `search_method` - The search method to use (text or vector)
     /// * `topic_title` - Optional topic to filter results
     ///
     /// # Returns
     ///
-    /// A Result containing either:
-    /// * A vector of search results
-    /// * A reqwest error if the search fails
+    /// A Future that resolves to a Result containing either:
+    /// * `Ok(Vec<SearchResult>)` - A vector of search results on success
+    /// * `Err(reqwest::Error)` - An HTTP client error if the search fails
     fn search_data_in_opensearch(
         &self,
         query: &str,
